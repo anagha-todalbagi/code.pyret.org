@@ -206,68 +206,6 @@
       editor.scrollIntoView(cmLoc.start, 100)
     }
 
-    function hoverSrclocAnchor(runtime, editors, srcloc, elt, loc) {
-      var warnDesired = 0;
-      var warnWait = 250;
-      var warnDuration = 5000;
-      var fadeAmt = 0.5;
-
-      var editor = editors[runtime.getField(loc, "source")];
-      if(!editor) { return; }
-      cmLoc = cmPosFromSrcloc(runtime, srcloc, loc);
-      var locKey = cmlocToCSSClass(cmLoc);
-      function setWarningState(obj) {
-        var opacity = Number(obj.css("opacity"));
-        if (warnDesired !== opacity) {
-          // Only act if the warning is all the way in or out.  The '1'
-          // in the following test is because the initial state is
-          // opacity = 1, though the element is not visible.
-          if ((opacity === 0) || (opacity === fadeAmt) || (opacity === 1)) {
-            if (warnDesired === fadeAmt) {
-              obj.fadeTo("fast", fadeAmt, function() {
-                setTimeout(function() {
-                  obj.fadeTo("slow", 0.0);
-                  warnDesired = 0;
-                }, warnDuration) });
-            } else {
-              obj.fadeTo("fast", 0.0);
-            }
-          }
-        }
-      }
-
-      elt.on("mouseenter", function() {
-        var view = editor.getScrollInfo();
-        var charCh = editor.charCoords(cmLoc.start, "local");
-        $("."+locKey).addClass("hover");
-        if (view.top > charCh.top) {
-          warnDesired = fadeAmt;
-          var warningUpper = jQuery(editor.getWrapperElement()).find(".warning-upper");
-          setTimeout(function() {setWarningState(warningUpper);}, warnWait);
-        } else if (view.top + view.clientHeight < charCh.bottom) {
-          warnDesired = fadeAmt;
-          var warningLower = jQuery(editor.getWrapperElement()).find(".warning-lower");
-          setTimeout(function() {setWarningState(warningLower);}, warnWait);
-        }
-      });
-
-      elt.on("mouseleave", function() {
-        $("."+locKey).removeClass("hover");
-        warnDesired = 0;
-        setTimeout(function() { setWarningState(jQuery(".warning-upper"));},
-                   warnWait);
-        setTimeout(function() { setWarningState(jQuery(".warning-lower"));},
-                   warnWait);
-      });
-
-      elt.on("click", function() {
-        warnDesired = 0;
-        jQuery(".warning-upper").fadeOut("fast");
-        jQuery(".warning-lower").fadeOut("fast");
-        editor.scrollIntoView(cmLoc.start, 100)
-      });
-    }
-
     function hoverLocs(editors, runtime, srcloc, elt, locs, cls) {
       var get = runtime.getField;
       var cases = runtime.ffi.cases;
