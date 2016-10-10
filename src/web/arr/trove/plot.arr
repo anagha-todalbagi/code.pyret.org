@@ -8,11 +8,11 @@
 #   function-plot: function-plot,
 #   is-function-plot: is-function-plot,
 #
-#   display-function: display-function,
-#   display-scatter: display-scatter,
-#   display-line: display-line,
+#   render-function: render-function,
+#   render-scatter: render-scatter,
+#   render-line: render-line,
 #
-#   display-multi-plot: display-multi-plot,
+#   render-multi-plot: render-multi-plot,
 #   default-options: default-options,
 #
 #   histogram: histogram,
@@ -39,18 +39,18 @@ import either as E
 import string-dict as SD
 
 OFFSET = 1
-MAX_SAMPLES = 100000
+MAX-SAMPLES = 100000
 
 type BaseWindowOptions = {
-  xscale :: Number,
-  yscale :: Number,
+  extend-x :: Number,
+  extend-y :: Number,
   interact :: Boolean,
   title :: String
 }
 
 base-window-options :: BaseWindowOptions = {
-  xscale: 0,
-  yscale: 0,
+  extend-x: 0,
+  extend-y: 0,
   interact: true,
   title: ''
 }
@@ -62,8 +62,8 @@ type PlotWindowOptions = {
   y-max :: Number,
   num-samples :: Number,
   infer-bounds :: Boolean,
-  xscale :: Number,
-  yscale :: Number,
+  extend-x :: Number,
+  extend-y :: Number,
   interact :: Boolean,
   title :: String
 }
@@ -75,8 +75,8 @@ plot-window-options :: PlotWindowOptions = {
   y-max: 10,
   num-samples: 1000,
   infer-bounds: false,
-  xscale: 0,
-  yscale: 0,
+  extend-x: 0,
+  extend-y: 0,
   interact: true,
   title: ''
 }
@@ -106,7 +106,6 @@ type WrappedHistogramWindowOptions = (HistogramWindowOptions -> HistogramWindowO
 type PlottableFunction = (Number -> Number)
 type Posn = RawArray<Number>
 type TableInt = RawArray<Posn>
-type Image = IM.Image
 
 data Plot:
   | line-plot(points :: Table, options :: WrappedPlotOptions)
@@ -136,11 +135,11 @@ fun sprintf-maker():
 end
 
 fun check-base-window-options(options :: BaseWindowOptions) -> Nothing block:
-  when (options.xscale < 0) or (options.xscale > 1):
-    raise('plot: xscale must be between 0 and 1')
+  when (options.extend-x < 0) or (options.extend-x > 1):
+    raise('plot: extend-x must be between 0 and 1')
   end
-  when (options.yscale < 0) or (options.yscale > 1):
-    raise('plot: yscale must be between 0 and 1')
+  when (options.extend-y < 0) or (options.extend-y > 1):
+    raise('plot: extend-y must be between 0 and 1')
   end
   nothing
 end
@@ -149,7 +148,7 @@ sprintf = sprintf-maker()
 
 default-options = {<A>(x :: A): x}
 
-fun histogram(tab :: Table, n :: Number, options-generator :: WrappedHistogramWindowOptions) -> Image block:
+fun histogram(tab :: Table, n :: Number, options-generator :: WrappedHistogramWindowOptions) -> IM.Image block:
   doc: ```
        Consume a table with one column: `value`, and a number of bins, 
        and show a histogram
@@ -180,11 +179,7 @@ where:
     end, 4, default-options) does-not-raise
 end
 
-fun histogram-image(tab :: Table, n :: Number):
-  histogram(tab, n, _.{ interact: false })
-end
-
-fun pie-chart(tab :: Table, options-generator :: WrappedPieChartWindowOptions) -> Image block:
+fun pie-chart(tab :: Table, options-generator :: WrappedPieChartWindowOptions) -> IM.Image block:
   doc: 'Consume a table with two columns: `label` and `value`, and show a pie-chart'
   when not(tab._header-raw-array =~ [raw-array: 'label', 'value']):
     raise('pie-chart: expect a table with columns named `label` and `value`')
@@ -203,13 +198,9 @@ where:
     end, default-options) does-not-raise
 end
 
-fun pie-chart-image(tab :: Table):
-  pie-chart(tab, _.{interact: false})
-end
-
 fun pie-chart-with-adjustable-radius(
     tab :: Table,
-    options-generator :: WrappedPieChartWindowOptions) -> Image block:
+    options-generator :: WrappedPieChartWindowOptions) -> IM.Image block:
   doc: ```
        Consume a table with three columns: `label`, `value`, and `radius`,
        and show a pie-chart
@@ -234,7 +225,7 @@ end
 fun bar-chart(
     tab :: Table,
     legend :: String,
-    options-generator :: WrappedBarChartWindowOptions) -> Image block:
+    options-generator :: WrappedBarChartWindowOptions) -> IM.Image block:
   when not(tab._header-raw-array =~ [raw-array: 'label', 'value']):
     raise('expect a table with two columns: label and value')
   end
@@ -253,7 +244,7 @@ end
 fun grouped-bar-chart(
     tab :: Table,
     legend :: List<String>,
-    options-generator :: WrappedBarChartWindowOptions) -> Image block:
+    options-generator :: WrappedBarChartWindowOptions) -> IM.Image block:
   when not(tab._header-raw-array =~ [raw-array: 'label', 'values']):
     raise('expect a table with two columns: label and values')
   end
@@ -323,16 +314,16 @@ where:
     ], plot-options)
 end
 
-fun display-function(title :: String, f :: PlottableFunction) -> Image:
-  display-multi-plot(
+fun render-function(title :: String, f :: PlottableFunction) -> IM.Image:
+  render-multi-plot(
     [list: function-plot(f, default-options)],
     _.{title: title})
 where:
   plot-function('My function', num-sin) does-not-raise
 end
 
-fun display-scatter(title :: String, tab :: Table) -> Image:
-  display-multi-plot(
+fun render-scatter(title :: String, tab :: Table) -> IM.Image:
+  render-multi-plot(
     [list: scatter-plot(tab, default-options)],
     _.{title: title})
 where:
@@ -346,8 +337,8 @@ where:
     end) does-not-raise
 end
 
-fun display-line(title :: String, tab :: Table) -> Image:
-  display-multi-plot(
+fun render-line(title :: String, tab :: Table) -> Image:
+  render-multi-plot(
     [list: line-plot(tab, default-options)],
     _.{title: title})
 where:
@@ -361,22 +352,22 @@ where:
     end) does-not-raise
 end
 
-fun display-multi-plot(
+fun render-multi-plot(
     plots :: List<Plot>,
-    options-generator :: WrappedPlotWindowOptions) -> Image block:
+    options-generator :: WrappedPlotWindowOptions) -> IM.Image block:
   options = options-generator(plot-window-options)
   _ = check-base-window-options(options)
   when (options.x-min >= options.x-max) or (options.y-min >= options.y-max):
     raise('plot: x-min and y-min must be strictly less than x-max and y-max respectively')
   end
-  when (options.num-samples > MAX_SAMPLES) or
+  when (options.num-samples > MAX-SAMPLES) or
     (options.num-samples <= 1) or
     not(num-is-integer(options.num-samples)):
     raise(
       [sprintf:
         'plot: num-samples must be an an integer greater than 1',
         ' and do not exceed ',
-        num-to-string(MAX_SAMPLES)])
+        num-to-string(MAX-SAMPLES)])
   end
 
   original-plots = plots
@@ -447,14 +438,14 @@ fun display-multi-plot(
   line-plots = partitioned.is-true
   scatter-plots = partitioned.is-false
 
-  fun helper(shadow options :: PlotWindowOptions) -> Image:
+  fun helper(shadow options :: PlotWindowOptions) -> IM.Image:
     shadow function-plots = function-plots.map(generate-xy(_, options))
     ret = P.plot-multi(
       nothing,
       options,
       function-plots + scatter-plots,
       line-plots)
-    cases (Either<PlotWindowOptions, Image>) ret:
+    cases (Either<PlotWindowOptions, IM.Image>) ret:
       | left(new-options) => helper(new-options)
       | right(image) => image
     end
@@ -465,10 +456,10 @@ end
 default-plot-color-list = 
   [list: I.green, I.red, I.orange, I.yellow, I.blue, I.purple, I.brown]
 
-fun display-plots(
+fun render-plots(
     title :: String,
     infer-bounds :: Boolean,
-    plots :: List<Plot>) -> Image:
+    plots :: List<Plot>) -> IM.Image:
   len = default-plot-color-list.length()
   new-plots = for map_n(n from 0, p from plots):
     c = {(x): {color: default-plot-color-list.get(num-modulo(n, len))}}
@@ -484,7 +475,7 @@ fun display-plots(
   else:
     options
   end
-  display-multi-plot(new-plots, options)
+  render-multi-plot(new-plots, options)
 end
 
 make-function-plot = function-plot(_, _.{color: I.blue})
