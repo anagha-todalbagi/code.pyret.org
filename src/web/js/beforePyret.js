@@ -304,6 +304,9 @@ $(function() {
 
   function save() {
     window.stickMessage("Saving...");
+    if ($("#saveButton").val("Save As")) {
+      copyOnSave = true;
+    }
     var savedProgram = programToSave.then(function(p) {
       if(p !== null && !copyOnSave) {
         if(p.getName() !== $("#program-name").val()) {
@@ -343,6 +346,7 @@ $(function() {
   CPO.save = save;
   $("#runButton").click(CPO.autoSave);
   $("#saveButton").click(save);
+  $("#saveAsButton").click(save);
   shareAPI.makeHoverMenu($("#menu"), $("#menuContents"), false, function(){});
 
   var codeContainer = $("<div>").addClass("replMain");
